@@ -58,8 +58,42 @@ func TestAddTask(t *testing.T) {
 	g.Inspect()
 	g.InspectReverse()
 
+}
+
+func TestCheckCycles(t *testing.T) {
+	g := InitGraph()
+
+	one := g.AddTask(Task{Name: "one"})
+	two := g.AddTask(Task{Name: "two"})
+
+	g.AddDependency(one, two)
+
 	if g.HasCycle() != false {
 		t.Fatal("Cycle Detected")
 	}
+
+	g.AddDependency(two, one)
+
+	if g.HasCycle() != true {
+		t.Fatal("Cycle Not Detected")
+	}
 }
 
+func TestRemainingCounter(t *testing.T) {
+	g := InitGraph()
+
+	one := g.AddTask(Task{Name: "one"})
+	two := g.AddTask(Task{Name: "two"})
+
+	remaining := g.nodes[one].remaining_dependencies
+	if remaining != 0 {
+		t.Fatal("Dependency Count Should Be 0, Got ", remaining)
+	}
+
+	g.AddDependency(one, two)
+
+	remaining = g.nodes[one].remaining_dependencies
+	if remaining != 1 {
+		t.Fatal("Dependency Count Should Be 1, Got ", remaining)
+	}
+}
