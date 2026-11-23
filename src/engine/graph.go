@@ -1,8 +1,28 @@
 package engine
 
-import "fmt"
+import (
+	"fmt"
+	"context"
+	"os/exec"
+)
 
 type NodeId uint32
+
+type CmdAction string
+type FuncAction func(context.Context) error
+
+type Action interface {
+	Execute(ctx context.Context) error
+}
+
+func (s CmdAction) Execute(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "sh", "-c", string(s))
+	return cmd.Run()
+}
+
+func (f FuncAction) Execute(ctx context.Context) error {
+	return f(ctx)
+}
 
 type TaskNode struct {
 	ID   NodeId
@@ -16,6 +36,7 @@ type TaskNode struct {
 
 type Task struct {
 	Name string
+	Action Action
 	// other data will go here
 	// such as `cmd`, etc
 }
@@ -43,7 +64,7 @@ func (g *Graph) AddTask(task Task) NodeId {
 	g.nodes[id] = TaskNode{
 		ID:   id,
 		Task: task,
-		remaining_dependencies: 0,
+		remainingDependencies: 0,
 	}
 
 	g.adjacency[id] = []NodeId{}
@@ -59,7 +80,7 @@ func (g *Graph) AddDependency(from, to NodeId) {
 	g.reverseAdj[to] = append(g.reverseAdj[to], from)
 
 	if entry, ok := g.nodes[from]; ok {
-		entry.remaining_dependencies++
+		entry.remainingDependencies++
 
 		g.nodes[from] = entry
 	}
