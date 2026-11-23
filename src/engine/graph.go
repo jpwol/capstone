@@ -11,7 +11,7 @@ type TaskNode struct {
 	// and more if needed
 
 	// should include reference counter here
-	remaining_dependencies int
+	remainingDependencies int
 }
 
 type Task struct {
