@@ -4,13 +4,14 @@ import "fmt"
 
 type NodeId uint32
 
-type Node struct {
+type TaskNode struct {
 	ID   NodeId
 	Task Task
 	// could track execution state
 	// and more if needed
 
 	// should include reference counter here
+	remaining_dependencies int
 }
 
 type Task struct {
@@ -21,7 +22,7 @@ type Task struct {
 
 type Graph struct {
 	nextID     NodeId
-	nodes      map[NodeId]Node
+	nodes      map[NodeId]TaskNode
 	adjacency  map[NodeId][]NodeId
 	reverseAdj map[NodeId][]NodeId
 }
@@ -29,7 +30,7 @@ type Graph struct {
 func InitGraph() Graph {
 	return Graph{
 		nextID:     0,
-		nodes:      make(map[NodeId]Node),
+		nodes:      make(map[NodeId]TaskNode),
 		adjacency:  make(map[NodeId][]NodeId),
 		reverseAdj: make(map[NodeId][]NodeId),
 	}
@@ -39,9 +40,10 @@ func (g *Graph) AddTask(task Task) NodeId {
 	id := g.nextID
 	g.nextID++
 
-	g.nodes[id] = Node{
+	g.nodes[id] = TaskNode{
 		ID:   id,
 		Task: task,
+		remaining_dependencies: 0,
 	}
 
 	g.adjacency[id] = []NodeId{}
@@ -55,11 +57,16 @@ func (g *Graph) AddTask(task Task) NodeId {
 func (g *Graph) AddDependency(from, to NodeId) {
 	g.adjacency[from] = append(g.adjacency[from], to)
 	g.reverseAdj[to] = append(g.reverseAdj[to], from)
+
+	if entry, ok := g.nodes[from]; ok {
+		entry.remaining_dependencies++
+
+		g.nodes[from] = entry
+	}
 }
 
 func (g Graph) GetTask(id NodeId) Task {
-
-	return Task{}
+	return g.nodes[id].Task
 }
 
 func (g Graph) GetNeighbors(id NodeId) []NodeId {
