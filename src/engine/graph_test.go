@@ -57,7 +57,6 @@ func TestAddTask(t *testing.T) {
 
 	g.Inspect()
 	g.InspectReverse()
-
 }
 
 func TestCheckCycles(t *testing.T) {
