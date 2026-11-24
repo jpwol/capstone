@@ -84,14 +84,14 @@ func TestRemainingCounter(t *testing.T) {
 	one := g.AddTask(Task{Name: "one"})
 	two := g.AddTask(Task{Name: "two"})
 
-	remaining := g.nodes[one].remaining_dependencies
+	remaining := g.nodes[one].remainingDependencies
 	if remaining != 0 {
 		t.Fatal("Dependency Count Should Be 0, Got ", remaining)
 	}
 
 	g.AddDependency(one, two)
 
-	remaining = g.nodes[one].remaining_dependencies
+	remaining = g.nodes[one].remainingDependencies
 	if remaining != 1 {
 		t.Fatal("Dependency Count Should Be 1, Got ", remaining)
 	}
