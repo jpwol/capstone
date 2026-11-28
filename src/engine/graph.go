@@ -6,8 +6,11 @@ import (
 
 type NodeId uint32
 
-type CmdAction string
-type FuncAction func(context.Context) error
+type Graph struct {
+	nextID       NodeId
+	nodes        map[NodeId]*TaskNode
+	dependents   map[NodeId][]NodeId
+	dependencies map[NodeId][]NodeId
 
 type Action interface {
 	Execute(ctx context.Context) error
