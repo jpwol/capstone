@@ -12,8 +12,7 @@ type Graph struct {
 	dependents   map[NodeId][]NodeId
 	dependencies map[NodeId][]NodeId
 
-type Action interface {
-	Execute(ctx context.Context) error
+	initialized bool
 }
 
 func (s CmdAction) Execute(ctx context.Context) error {
