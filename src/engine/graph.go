@@ -15,9 +15,14 @@ type Graph struct {
 	initialized bool
 }
 
-func (s CmdAction) Execute(ctx context.Context) error {
-	cmd := exec.CommandContext(ctx, "sh", "-c", string(s))
-	return cmd.Run()
+func NewGraph() *Graph {
+	return &Graph{
+		nextID:       0,
+		nodes:        make(map[NodeId]*TaskNode),
+		dependents:   make(map[NodeId][]NodeId),
+		dependencies: make(map[NodeId][]NodeId),
+		initialized: false,
+	}
 }
 
 func (f FuncAction) Execute(ctx context.Context) error {
