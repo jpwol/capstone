@@ -42,11 +42,27 @@ func (g *Graph) AddTask(task Task) NodeId {
 	return id
 }
 
-type Task struct {
-	Name string
-	Action Action
-	// other data will go here
-	// such as `cmd`, etc
+// call this once graph construction is done
+func (g *Graph) Initialize() ([]*TaskNode, error) {
+	if g.initialized {
+		return nil, fmt.Errorf("cannot initialize graph: already initialized")
+	}
+
+	if g.HasCycle() {
+		return nil, fmt.Errorf("cannot initialize graph: cycle detected")
+	}
+
+	var ready []*TaskNode
+
+	for _, node := range g.nodes {
+		if node.State == Pending && node.remainingDependencies == 0 {
+			node.State = Ready
+			ready = append(ready, node)
+		}
+	}
+
+	g.initialized = true
+	return ready, nil
 }
 
 type Graph struct {
