@@ -25,18 +25,21 @@ func NewGraph() *Graph {
 	}
 }
 
-func (f FuncAction) Execute(ctx context.Context) error {
-	return f(ctx)
-}
+func (g *Graph) AddTask(task Task) NodeId {
+	id := g.nextID
+	g.nextID++
 
-type TaskNode struct {
-	ID   NodeId
-	Task Task
-	// could track execution state
-	// and more if needed
+	g.nodes[id] = &TaskNode{
+		ID:                    id,
+		Task:                  task,
+		State:                 Pending,
+		remainingDependencies: 0,
+	}
 
-	// should include reference counter here
-	remainingDependencies int
+	g.dependents[id] = []NodeId{}
+	g.dependencies[id] = []NodeId{}
+
+	return id
 }
 
 type Task struct {
