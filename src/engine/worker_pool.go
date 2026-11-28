@@ -1,15 +1,17 @@
 package engine
 
 import (
-	"fmt"
-	"sync"
-	"slices"
+	// "fmt"
+	// "sync"
+	// "slices"
 )
 
-type Worker struct {
-     id int
-     work []int
-}
+// NOTE: moved to worker.go
+//
+// type Worker struct {
+//      id int
+//      work []int
+// }
 
 
 //func InitializePool(width, height, maxIter, workers int) []int {
