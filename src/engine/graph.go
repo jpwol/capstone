@@ -65,49 +65,79 @@ func (g *Graph) Initialize() ([]*TaskNode, error) {
 	return ready, nil
 }
 
-type Graph struct {
-	nextID     NodeId
-	nodes      map[NodeId]TaskNode
-	adjacency  map[NodeId][]NodeId
-	reverseAdj map[NodeId][]NodeId
-}
-
-func InitGraph() Graph {
-	return Graph{
-		nextID:     0,
-		nodes:      make(map[NodeId]TaskNode),
-		adjacency:  make(map[NodeId][]NodeId),
-		reverseAdj: make(map[NodeId][]NodeId),
-	}
-}
-
-func (g *Graph) AddTask(task Task) NodeId {
-	id := g.nextID
-	g.nextID++
-
-	g.nodes[id] = TaskNode{
-		ID:   id,
-		Task: task,
-		remainingDependencies: 0,
+// TODO: add check to make sure same from and to are not added more than once
+func (g *Graph) AddDependency(from, to NodeId) error {
+	if _, ok := g.nodes[from]; !ok {
+		return fmt.Errorf("node %d does not exist", from)
 	}
 
-	g.adjacency[id] = []NodeId{}
-	g.reverseAdj[id] = []NodeId{}
+	_, ok := g.nodes[to]
+	if !ok {
+		return fmt.Errorf("node %d does not exist", to)
+	}
 
-	return id
+	g.dependents[from] = append(g.dependents[from], to)
+	g.dependencies[to] = append(g.dependencies[to], from)
+
+	g.nodes[to].remainingDependencies++
+
+	return nil
 }
 
-// add cycle detection on from and to instead of checking whole graph
-// on every edge creation
-func (g *Graph) AddDependency(from, to NodeId) {
-	g.adjacency[from] = append(g.adjacency[from], to)
-	g.reverseAdj[to] = append(g.reverseAdj[to], from)
-
-	if entry, ok := g.nodes[from]; ok {
-		entry.remainingDependencies++
-
-		g.nodes[from] = entry
+func (g *Graph) StartTask(id NodeId) error {
+	node, ok := g.nodes[id]
+	if !ok {
+		return fmt.Errorf("node %d does not exist", id)
 	}
+
+	if node.State != Ready {
+		return fmt.Errorf("node %d is not ready", id)
+	}
+
+	node.State = Running
+	return nil
+}
+
+func (g *Graph) CompleteTask(id NodeId) ([]*TaskNode, error) {
+	node, ok := g.nodes[id]
+	if !ok {
+		return nil, fmt.Errorf("node %d does not exist", id)
+	}
+
+	if node.State != Running {
+		return nil, fmt.Errorf("node %d is not running", id)
+	}
+
+	node.State = Completed
+
+	var ready []*TaskNode
+
+	for _, dependentID := range g.dependents[id] {
+		dependent := g.nodes[dependentID]
+
+		dependent.remainingDependencies--
+
+		if dependent.remainingDependencies == 0 && dependent.State == Pending {
+			dependent.State = Ready
+			ready = append(ready, dependent)
+		}
+	}
+
+	return ready, nil
+}
+
+func (g *Graph) FailTask(id NodeId, err error) error {
+	node, ok := g.nodes[id]
+	if !ok {
+		return fmt.Errorf("node %d does not exist", id)
+	}
+
+	if node.State != Running {
+		return fmt.Errorf("node %d is not running", id)
+	}
+
+	node.State = Failed
+	return nil
 }
 
 func (g Graph) GetTask(id NodeId) Task {
@@ -122,9 +152,9 @@ func (g Graph) GetNeighbors(id NodeId) []NodeId {
 func (g Graph) Inspect() {
 	fmt.Println("Adjacency List")
 	fmt.Println("--------------")
-	for i := range g.adjacency {
+	for i := range g.dependents {
 		fmt.Printf("%d:  { ", i)
-		for _, v := range g.adjacency[i] {
+		for _, v := range g.dependents[i] {
 			fmt.Printf("%d ", v)
 		}
 		fmt.Println("}")
@@ -134,9 +164,9 @@ func (g Graph) Inspect() {
 func (g Graph) InspectReverse() {
 	fmt.Println("Reverse Adjacency List")
 	fmt.Println("----------------------")
-	for i := range g.reverseAdj {
+	for i := range g.dependencies {
 		fmt.Printf("%d:  { ", i)
-		for _, v := range g.reverseAdj[i] {
+		for _, v := range g.dependencies[i] {
 			fmt.Printf("%d ", v)
 		}
 		fmt.Println("}")
@@ -157,7 +187,7 @@ func (g *Graph) HasCycle() bool {
 	dfs = func(id NodeId) bool {
 		state[id] = visiting
 
-		for _, neighbor := range g.adjacency[id] {
+		for _, neighbor := range g.dependents[id] {
 			if state[neighbor] == visiting {
 				return true
 			}
